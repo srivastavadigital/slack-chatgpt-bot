@@ -5,9 +5,10 @@ import os
 
 app = Flask(__name__)
 
-SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "xoxb-your-slack-token")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "sk-your-openai-key")
-openai.api_key = OPENAI_API_KEY
+SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN", "")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 def send_slack_message(channel, text):
     requests.post("https://slack.com/api/chat.postMessage", headers={
@@ -30,14 +31,14 @@ def slack_events():
 
     if event.get("type") in ["app_mention", "message"]:
         try:
-            response = openai.ChatCompletion.create(
+            response = openai_client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": user_text}]
             )
-            reply = response.choices[0].message["content"]
+            reply = response.choices[0].message.content
             send_slack_message(channel, reply)
         except Exception as e:
-            send_slack_message(channel, f"Error: {str(e)}")
+            send_slack_message(channel, f"OpenAI Error: {str(e)}")
 
     return "", 200
 
